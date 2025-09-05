@@ -34,7 +34,7 @@ public class Player : MonoBehaviour
         horizontalDirection.y = 0;
         Vector3 movementDirection = horizontalDirection + verticalDirection;
         _rigidBody.MovePosition(_rigidBody.position + movementDirection * _speed * Time.deltaTime);
-        Debug.Log("Horizontal Input: " + horizontalInput);
-        Debug.Log("Vertical Input: " + verticalInput);
+        //Debug.Log("Horizontal Input: " + horizontalInput);
+        //Debug.Log("Vertical Input: " + verticalInput);
     }
 }
