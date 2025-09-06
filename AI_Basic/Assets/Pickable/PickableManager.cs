@@ -5,6 +5,9 @@ using UnityEngine;
 public class PickableManager : MonoBehaviour
 {
     // Start is called before the first frame update
+    [SerializeField]
+    private Player _player;
+
     private List<Pickable> _pickablesList = new List<Pickable>();
     
     private void Start()
@@ -33,6 +36,10 @@ public class PickableManager : MonoBehaviour
         if (_pickablesList.Count <= 0)
         {
             Debug.Log("All Pickables Collected");
+        }
+        if (pickable.PickableType == PickableType.PowerUp)
+        {
+            _player?.PickPowerUp();
         }
     }
 }

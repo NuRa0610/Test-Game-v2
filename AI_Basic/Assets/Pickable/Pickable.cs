@@ -7,6 +7,7 @@ public class Pickable : MonoBehaviour
 {
     [SerializeField]
     private PickableType _pickableType;
+    public PickableType PickableType => _pickableType;
     public Action<Pickable> OnPicked;
 
     // Start is called before the first frame update
