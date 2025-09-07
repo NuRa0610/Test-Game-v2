@@ -18,6 +18,8 @@ public class Enemy : MonoBehaviour
 
     [HideInInspector]
     public UnityEngine.AI.NavMeshAgent NavMeshAgent;
+    [HideInInspector]
+    public Animator Animator; //{ get; private set; }
 
     public void SwitchState(BaseState state)
     {
@@ -29,6 +31,7 @@ public class Enemy : MonoBehaviour
     private void Awake()
     {
         _currentState = PatrolState;
+        Animator = GetComponent<Animator>();
         _currentState.EnterState(this);
         NavMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
     }
@@ -58,5 +61,21 @@ public class Enemy : MonoBehaviour
     private void StopRetreat()
     {
         SwitchState(PatrolState);
+    }
+
+    public void Dead()
+    {
+        Destroy(gameObject);
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (_currentState != RetreatState)
+        {
+            if (collision.gameObject.CompareTag("Player"))
+            {
+                collision.gameObject.GetComponent<Player>().Dead();
+            }
+        }
     }
 }

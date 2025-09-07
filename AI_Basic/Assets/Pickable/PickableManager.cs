@@ -7,6 +7,8 @@ public class PickableManager : MonoBehaviour
     // Start is called before the first frame update
     [SerializeField]
     private Player _player;
+    [SerializeField]
+    private ScoreManager _scoreManager;
 
     private List<Pickable> _pickablesList = new List<Pickable>();
     
@@ -19,12 +21,14 @@ public class PickableManager : MonoBehaviour
     private void initializePickableList()
     {
         //Pickable[] pickableObjects = gameObject.FindObjectsOfType<Pickable>();
+        //_scoreManager.SetMaxScore(_pickablesList.Count);
         Pickable[] pickableObjects = FindObjectsOfType<Pickable>();
         for (int i = 0; i < pickableObjects.Length; i++)
         {
             _pickablesList.Add(pickableObjects[i]);
             pickableObjects[i].OnPicked += OnPickableCollected;
         }
+        _scoreManager.SetMaxScore(_pickablesList.Count);
         Debug.Log("Pickables in the scene: " + _pickablesList.Count);
     }
 
@@ -33,13 +37,21 @@ public class PickableManager : MonoBehaviour
         _pickablesList.Remove(pickable);
         Destroy(pickable.gameObject);
         Debug.Log("Pickable Collected: " + pickable.name);
+        
         if (_pickablesList.Count <= 0)
         {
             Debug.Log("All Pickables Collected");
         }
+
         if (pickable.PickableType == PickableType.PowerUp)
         {
             _player?.PickPowerUp();
         }
+
+        if (_scoreManager != null)
+        {
+            _scoreManager.AddScore(1);
+        }
+
     }
 }

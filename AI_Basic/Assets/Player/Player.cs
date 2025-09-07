@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class Player : MonoBehaviour
 {
@@ -14,9 +15,16 @@ public class Player : MonoBehaviour
     private Transform _camera;
     [SerializeField]
     private float _powerUpDuration;
+    [SerializeField]
+    private Transform _respawnPoint;
+    [SerializeField]
+    private int _health;
+    [SerializeField]
+    private TMP_Text _healthText;
 
     private Rigidbody _rigidBody;
     private Coroutine _powerupCoroutine;
+    private bool _isPoweredUp;
     public Action OnPowerUpStart;
     public Action OnPowerUpStop;
 
@@ -27,6 +35,7 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
+        UpdateUI();
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -58,6 +67,8 @@ public class Player : MonoBehaviour
 
     private IEnumerator StartPowerUp()
     {
+        _isPoweredUp = true;
+
         if (OnPowerUpStart != null)
         {
             OnPowerUpStart();
@@ -65,9 +76,45 @@ public class Player : MonoBehaviour
         //Debug.Log("Power Up Started");
         yield return new WaitForSeconds(_powerUpDuration);
         //Debug.Log("Power Up Ended");
+        _isPoweredUp = false;
+
         if (OnPowerUpStop != null)
         {
             OnPowerUpStop();
         }
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (_isPoweredUp)
+        {
+            if (collision.gameObject.CompareTag("Enemy"))
+            {
+                collision.gameObject.GetComponent<Enemy>().Dead();
+            }
+        }
+    }
+
+    private void UpdateUI()
+    {
+        _healthText.text = "Health: " + _health;
+    }
+
+    public void Dead()
+    {
+        _health -= 1;
+        
+        if (_health > 0)
+        {
+            transform.position = _respawnPoint.position;
+        }
+
+        else
+        {
+            _health = 0;
+            Debug.Log("Game Over");
+        }
+        
+        UpdateUI();
     }
 }
