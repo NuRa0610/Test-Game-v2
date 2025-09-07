@@ -32,7 +32,7 @@ public class PatrolState : BaseState
         else
         {
             float distance = Vector3.Distance(_destination, enemy.transform.position);
-            Debug.Log($"Distance to destination: {distance}");
+            //Debug.Log($"Distance to destination: {distance}");
             if (distance <= 1)
             {
                 Debug.Log("Reached waypoint, picking new one.");

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PickableManager : MonoBehaviour
 {
@@ -29,18 +30,19 @@ public class PickableManager : MonoBehaviour
             pickableObjects[i].OnPicked += OnPickableCollected;
         }
         _scoreManager.SetMaxScore(_pickablesList.Count);
-        Debug.Log("Pickables in the scene: " + _pickablesList.Count);
+        //Debug.Log("Pickables in the scene: " + _pickablesList.Count);
     }
 
     private void OnPickableCollected(Pickable pickable)
     {
         _pickablesList.Remove(pickable);
         Destroy(pickable.gameObject);
-        Debug.Log("Pickable Collected: " + pickable.name);
+        //Debug.Log("Pickable Collected: " + pickable.name);
         
         if (_pickablesList.Count <= 0)
         {
-            Debug.Log("All Pickables Collected");
+            //Debug.Log("All Pickables Collected");
+            SceneManager.LoadScene("WinScreen");
         }
 
         if (pickable.PickableType == PickableType.PowerUp)
