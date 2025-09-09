@@ -1,7 +1,7 @@
 # 🎮 Just doing another logic test
 
 ## 🌐 Live Preview
-[Click to play on GitHub Pages](https://nura0610.github.io/Test-Game-2/)
+[Click to play on GitHub Pages](https://nura0610.github.io/Test-Game-v2/)
 
 ## 🛠️ Build Details
 - Unity Version: *2022*
