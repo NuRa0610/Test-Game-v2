@@ -3,6 +3,9 @@ using UnityEngine;
 
 public class CameraWallFade : MonoBehaviour
 {
+    private const string StandardTransparentVariantResource = "WallFadeTransparent";
+    private static Material s_standardTransparentVariantAnchor;
+
     [Header("References")]
     [SerializeField] private Transform _target;
     [SerializeField] private Camera _camera;
@@ -26,6 +29,8 @@ public class CameraWallFade : MonoBehaviour
 
     private void Awake()
     {
+        CacheTransparentVariant();
+
         if (_camera == null)
         {
             _camera = Camera.main;
@@ -214,10 +219,13 @@ public class CameraWallFade : MonoBehaviour
 
     private static void SetupMaterialTransparency(Material material)
     {
+        CacheTransparentVariant();
+
         // Standard shader setup
         if (material.HasProperty("_Mode"))
         {
             material.SetFloat("_Mode", 3f);
+            material.SetOverrideTag("RenderType", "Transparent");
             material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
             material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             material.SetInt("_ZWrite", 0);
@@ -242,5 +250,15 @@ public class CameraWallFade : MonoBehaviour
             material.SetInt("_ZWrite", 0);
             material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
         }
+    }
+
+    private static void CacheTransparentVariant()
+    {
+        if (s_standardTransparentVariantAnchor != null)
+        {
+            return;
+        }
+
+        s_standardTransparentVariantAnchor = Resources.Load<Material>(StandardTransparentVariantResource);
     }
 }
