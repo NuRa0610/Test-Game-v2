@@ -22,7 +22,10 @@ public class Player : MonoBehaviour
     [SerializeField]
     private float _powerUpDuration;
     [SerializeField]
-    private Transform _respawnPoint;
+    private bool _useEnemyWaypointsForRespawn = true;
+    [SerializeField]
+    [Min(0f)]
+    private float _safeRespawnDistanceFromEnemy = 6f;
     [SerializeField]
     private int _health;
     [SerializeField]
@@ -186,7 +189,11 @@ public class Player : MonoBehaviour
         
         if (_health > 0)
         {
-            transform.position = _respawnPoint.position;
+            Vector3 respawnPosition = GetRespawnPosition();
+            _rigidBody.velocity = Vector3.zero;
+            _rigidBody.angularVelocity = Vector3.zero;
+            _rigidBody.position = respawnPosition;
+            transform.position = respawnPosition;
         }
 
         else
@@ -196,5 +203,107 @@ public class Player : MonoBehaviour
         }
         
         UpdateUI();
+    }
+
+    private Vector3 GetRespawnPosition()
+    {
+        List<Transform> candidates = CollectRespawnCandidates();
+        if (candidates.Count == 0)
+        {
+            return transform.position;
+        }
+
+        Enemy[] enemies = FindObjectsOfType<Enemy>();
+        List<Transform> safeCandidates = new List<Transform>();
+        float bestNearestEnemyDistance = -1f;
+        Transform bestFallbackCandidate = candidates[0];
+        float safeDistanceSquared = _safeRespawnDistanceFromEnemy * _safeRespawnDistanceFromEnemy;
+
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            Transform candidate = candidates[i];
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            float nearestEnemyDistanceSquared = GetNearestEnemyDistanceSquared(candidate.position, enemies);
+            if (nearestEnemyDistanceSquared >= safeDistanceSquared)
+            {
+                safeCandidates.Add(candidate);
+            }
+
+            if (nearestEnemyDistanceSquared > bestNearestEnemyDistance)
+            {
+                bestNearestEnemyDistance = nearestEnemyDistanceSquared;
+                bestFallbackCandidate = candidate;
+            }
+        }
+
+        if (safeCandidates.Count > 0)
+        {
+            int randomIndex = UnityEngine.Random.Range(0, safeCandidates.Count);
+            return safeCandidates[randomIndex].position;
+        }
+
+        return bestFallbackCandidate.position;
+    }
+
+    private List<Transform> CollectRespawnCandidates()
+    {
+        List<Transform> candidates = new List<Transform>();
+        HashSet<Transform> uniqueCandidates = new HashSet<Transform>();
+
+        if (!_useEnemyWaypointsForRespawn)
+        {
+            return candidates;
+        }
+
+        Enemy[] enemies = FindObjectsOfType<Enemy>();
+        for (int i = 0; i < enemies.Length; i++)
+        {
+            Enemy enemy = enemies[i];
+            if (enemy == null || enemy.WayPoints == null)
+            {
+                continue;
+            }
+
+            for (int j = 0; j < enemy.WayPoints.Count; j++)
+            {
+                Transform waypoint = enemy.WayPoints[j];
+                if (waypoint != null && uniqueCandidates.Add(waypoint))
+                {
+                    candidates.Add(waypoint);
+                }
+            }
+        }
+
+        return candidates;
+    }
+
+    private static float GetNearestEnemyDistanceSquared(Vector3 position, Enemy[] enemies)
+    {
+        if (enemies == null || enemies.Length == 0)
+        {
+            return float.MaxValue;
+        }
+
+        float nearestDistanceSquared = float.MaxValue;
+        for (int i = 0; i < enemies.Length; i++)
+        {
+            Enemy enemy = enemies[i];
+            if (enemy == null)
+            {
+                continue;
+            }
+
+            float distanceSquared = (enemy.transform.position - position).sqrMagnitude;
+            if (distanceSquared < nearestDistanceSquared)
+            {
+                nearestDistanceSquared = distanceSquared;
+            }
+        }
+
+        return nearestDistanceSquared;
     }
 }
