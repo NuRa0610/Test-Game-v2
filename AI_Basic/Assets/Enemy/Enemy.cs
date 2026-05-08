@@ -9,6 +9,9 @@ public class Enemy : MonoBehaviour
     [SerializeField]
     public float ChaseDistance;
     [SerializeField]
+    [Min(0f)]
+    public float ChaseExitBuffer = 0.5f;
+    [SerializeField]
     public Player Player;
 
     private BaseState _currentState;
