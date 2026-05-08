@@ -12,7 +12,7 @@
 
 ## 🐞 Known Issues
 - Bugs character and camera movement. (Done)
-    - Add more collider so player cant (atleast not easily) 
+    - Add more collider so player cant (atleast not easily) walkthrough walls
 - Enemy instant kill you (cause near spawn point) (Done)
     - Add some distance from enemy when spawn 
 
