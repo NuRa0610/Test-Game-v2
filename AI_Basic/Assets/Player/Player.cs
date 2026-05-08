@@ -30,6 +30,8 @@ public class Player : MonoBehaviour
     private int _health;
     [SerializeField]
     private TMP_Text _healthText;
+    [SerializeField]
+    private bool _lockCursorOnStart = true;
 
     private Rigidbody _rigidBody;
     private Coroutine _powerupCoroutine;
@@ -55,14 +57,29 @@ public class Player : MonoBehaviour
     private void Start()
     {
         UpdateUI();
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        ApplyCursorState();
     }
 
     private void Update()
     {
-        _moveInput.x = Input.GetAxis("Horizontal");
-        _moveInput.y = Input.GetAxis("Vertical");
+#if UNITY_EDITOR
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+#endif
+
+        _moveInput = CrossPlatformInput.GetMoveInput();
+    }
+
+    private void ApplyCursorState()
+    {
+        bool useTouchControls = Input.touchSupported || Application.isMobilePlatform;
+        bool shouldLockCursor = _lockCursorOnStart && !useTouchControls;
+
+        Cursor.lockState = shouldLockCursor ? CursorLockMode.Locked : CursorLockMode.None;
+        Cursor.visible = !shouldLockCursor;
     }
 
     private void FixedUpdate()
