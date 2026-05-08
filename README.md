@@ -15,6 +15,7 @@
     - Add more collider so player cant (atleast not easily) walkthrough walls
 - Enemy instant kill you (cause near spawn point) (Done)
     - Add some distance from enemy when spawn 
+- After respawn got stuck in the wall
 
 ## 🎬 Scenes Overview
 
