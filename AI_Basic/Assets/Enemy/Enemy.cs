@@ -15,11 +15,22 @@ public class Enemy : MonoBehaviour
     public Player Player;
     [SerializeField]
     private float _forwardOffset = 180f;
+    [SerializeField]
+    [Min(0f)]
+    private float _respawnDelay = 3f;
+    [SerializeField]
+    [Min(0f)]
+    private float _safeRespawnDistanceFromPlayer = 6f;
 
     private BaseState _currentState;
     public PatrolState PatrolState = new PatrolState();
     public ChaseState ChaseState = new ChaseState();
     public RetreatState RetreatState = new RetreatState();
+    private Collider _collider;
+    private Renderer[] _renderers;
+    private Vector3 _spawnPosition;
+    private Quaternion _spawnRotation;
+    private bool _isDead;
 
     [HideInInspector]
     public UnityEngine.AI.NavMeshAgent NavMeshAgent;
@@ -37,6 +48,10 @@ public class Enemy : MonoBehaviour
     {
         _currentState = PatrolState;
         Animator = GetComponent<Animator>();
+        _collider = GetComponent<Collider>();
+        _renderers = GetComponentsInChildren<Renderer>();
+        _spawnPosition = transform.position;
+        _spawnRotation = transform.rotation;
         _currentState.EnterState(this);
         NavMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
 
@@ -57,6 +72,11 @@ public class Enemy : MonoBehaviour
 
     private void Update()
     {
+        if (_isDead)
+        {
+            return;
+        }
+
         if (_currentState != null)
         {
             _currentState.UpdateState(this);
@@ -96,11 +116,123 @@ public class Enemy : MonoBehaviour
 
     public void Dead()
     {
-        Destroy(gameObject);
+        if (_isDead)
+        {
+            return;
+        }
+
+        StartCoroutine(RespawnAfterDelay());
+    }
+
+    private IEnumerator RespawnAfterDelay()
+    {
+        _isDead = true;
+        SetAliveState(false);
+
+        yield return new WaitForSeconds(_respawnDelay);
+
+        Vector3 respawnPosition = GetRespawnPosition();
+        transform.rotation = _spawnRotation;
+
+        if (NavMeshAgent != null)
+        {
+            NavMeshAgent.enabled = true;
+            NavMeshAgent.Warp(respawnPosition);
+            NavMeshAgent.ResetPath();
+            NavMeshAgent.isStopped = false;
+        }
+        else
+        {
+            transform.position = respawnPosition;
+        }
+
+        _currentState = PatrolState;
+        _currentState.EnterState(this);
+        SetAliveState(true);
+        _isDead = false;
+    }
+
+    private void SetAliveState(bool isAlive)
+    {
+        if (_collider != null)
+        {
+            _collider.enabled = isAlive;
+        }
+
+        for (int i = 0; i < _renderers.Length; i++)
+        {
+            if (_renderers[i] != null)
+            {
+                _renderers[i].enabled = isAlive;
+            }
+        }
+
+        if (NavMeshAgent != null)
+        {
+            if (!isAlive)
+            {
+                NavMeshAgent.isStopped = true;
+                NavMeshAgent.ResetPath();
+                NavMeshAgent.enabled = false;
+            }
+        }
+    }
+
+    private Vector3 GetRespawnPosition()
+    {
+        if (WayPoints == null || WayPoints.Count == 0)
+        {
+            return _spawnPosition;
+        }
+
+        List<Transform> safeCandidates = new List<Transform>();
+        Transform bestFallbackCandidate = null;
+        float bestDistanceSquared = -1f;
+        float safeDistanceSquared = _safeRespawnDistanceFromPlayer * _safeRespawnDistanceFromPlayer;
+        Vector3 playerPosition = Player != null ? Player.transform.position : transform.position;
+
+        for (int i = 0; i < WayPoints.Count; i++)
+        {
+            Transform waypoint = WayPoints[i];
+            if (waypoint == null)
+            {
+                continue;
+            }
+
+            float distanceSquared = (waypoint.position - playerPosition).sqrMagnitude;
+            if (distanceSquared >= safeDistanceSquared)
+            {
+                safeCandidates.Add(waypoint);
+            }
+
+            if (distanceSquared > bestDistanceSquared)
+            {
+                bestDistanceSquared = distanceSquared;
+                bestFallbackCandidate = waypoint;
+            }
+        }
+
+        if (safeCandidates.Count > 0)
+        {
+            int randomIndex = UnityEngine.Random.Range(0, safeCandidates.Count);
+            return safeCandidates[randomIndex].position;
+        }
+
+        if (bestFallbackCandidate != null)
+        {
+            return bestFallbackCandidate.position;
+        }
+
+        return _spawnPosition;
     }
 
     private void OnCollisionEnter(Collision collision)
     {
+        if (_isDead)
+        {
+            return;
+        }
+
         if (_currentState != RetreatState)
         {
             if (collision.gameObject.CompareTag("Player"))
