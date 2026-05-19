@@ -10180,6 +10180,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _speed: 10
   _camera: {fileID: 963194228}
+  _visualRoot: {fileID: 910227145}
   _powerUpDuration: 10
   _respawnPoint: {fileID: 1209665839}
   _health: 3
