@@ -22,9 +22,31 @@ public class CameraWallFade : MonoBehaviour
     private class FadeState
     {
         public Material[] Materials;
+        public MaterialRenderState[] RenderStates;
         public float[] OriginalAlphas;
         public float CurrentAlpha = 1f;
         public float TargetAlpha = 1f;
+    }
+
+    private class MaterialRenderState
+    {
+        public bool HasMode;
+        public float Mode;
+        public bool HasSurface;
+        public float Surface;
+        public bool HasBlend;
+        public float Blend;
+        public bool HasSrcBlend;
+        public int SrcBlend;
+        public bool HasDstBlend;
+        public int DstBlend;
+        public bool HasZWrite;
+        public int ZWrite;
+        public int RenderQueue;
+        public string RenderType;
+        public bool AlphaTestEnabled;
+        public bool AlphaBlendEnabled;
+        public bool AlphaPremultiplyEnabled;
     }
 
     private void Awake()
@@ -111,6 +133,10 @@ public class CameraWallFade : MonoBehaviour
             {
                 state.TargetAlpha = 1f;
             }
+            else
+            {
+                SetupMaterialsTransparency(state);
+            }
 
             state.CurrentAlpha = Mathf.MoveTowards(
                 state.CurrentAlpha,
@@ -119,6 +145,18 @@ public class CameraWallFade : MonoBehaviour
             );
 
             ApplyAlpha(state, state.CurrentAlpha);
+
+            if (state.TargetAlpha >= 1f && Mathf.Approximately(state.CurrentAlpha, 1f))
+            {
+                RestoreMaterialState(state);
+
+                if (toRemove == null)
+                {
+                    toRemove = new List<Renderer>();
+                }
+
+                toRemove.Add(renderer);
+            }
         }
 
         if (toRemove != null)
@@ -141,6 +179,7 @@ public class CameraWallFade : MonoBehaviour
         FadeState state = new FadeState
         {
             Materials = materials,
+            RenderStates = new MaterialRenderState[materials.Length],
             OriginalAlphas = new float[materials.Length],
             CurrentAlpha = 1f,
             TargetAlpha = 1f
@@ -156,7 +195,7 @@ public class CameraWallFade : MonoBehaviour
                 continue;
             }
 
-            SetupMaterialTransparency(material);
+            state.RenderStates[i] = CaptureMaterialState(material);
 
             if (TryGetColorProperty(material, out string colorProperty))
             {
@@ -173,6 +212,56 @@ public class CameraWallFade : MonoBehaviour
         if (!hasValidColorProperty)
         {
             return null;
+        }
+
+        return state;
+    }
+
+    private static MaterialRenderState CaptureMaterialState(Material material)
+    {
+        MaterialRenderState state = new MaterialRenderState
+        {
+            RenderQueue = material.renderQueue,
+            RenderType = material.GetTag("RenderType", false, string.Empty),
+            AlphaTestEnabled = material.IsKeywordEnabled("_ALPHATEST_ON"),
+            AlphaBlendEnabled = material.IsKeywordEnabled("_ALPHABLEND_ON"),
+            AlphaPremultiplyEnabled = material.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON")
+        };
+
+        if (material.HasProperty("_Mode"))
+        {
+            state.HasMode = true;
+            state.Mode = material.GetFloat("_Mode");
+        }
+
+        if (material.HasProperty("_Surface"))
+        {
+            state.HasSurface = true;
+            state.Surface = material.GetFloat("_Surface");
+        }
+
+        if (material.HasProperty("_Blend"))
+        {
+            state.HasBlend = true;
+            state.Blend = material.GetFloat("_Blend");
+        }
+
+        if (material.HasProperty("_SrcBlend"))
+        {
+            state.HasSrcBlend = true;
+            state.SrcBlend = material.GetInt("_SrcBlend");
+        }
+
+        if (material.HasProperty("_DstBlend"))
+        {
+            state.HasDstBlend = true;
+            state.DstBlend = material.GetInt("_DstBlend");
+        }
+
+        if (material.HasProperty("_ZWrite"))
+        {
+            state.HasZWrite = true;
+            state.ZWrite = material.GetInt("_ZWrite");
         }
 
         return state;
@@ -196,6 +285,87 @@ public class CameraWallFade : MonoBehaviour
             Color color = material.GetColor(colorProperty);
             color.a = Mathf.Clamp01(state.OriginalAlphas[i] * normalizedAlpha);
             material.SetColor(colorProperty, color);
+        }
+    }
+
+    private static void SetupMaterialsTransparency(FadeState state)
+    {
+        for (int i = 0; i < state.Materials.Length; i++)
+        {
+            Material material = state.Materials[i];
+            if (material != null)
+            {
+                SetupMaterialTransparency(material);
+            }
+        }
+    }
+
+    private static void RestoreMaterialState(FadeState state)
+    {
+        for (int i = 0; i < state.Materials.Length; i++)
+        {
+            Material material = state.Materials[i];
+            MaterialRenderState renderState = state.RenderStates[i];
+
+            if (material == null || renderState == null)
+            {
+                continue;
+            }
+
+            if (TryGetColorProperty(material, out string colorProperty))
+            {
+                Color color = material.GetColor(colorProperty);
+                color.a = state.OriginalAlphas[i];
+                material.SetColor(colorProperty, color);
+            }
+
+            if (renderState.HasMode)
+            {
+                material.SetFloat("_Mode", renderState.Mode);
+            }
+
+            if (renderState.HasSurface)
+            {
+                material.SetFloat("_Surface", renderState.Surface);
+            }
+
+            if (renderState.HasBlend)
+            {
+                material.SetFloat("_Blend", renderState.Blend);
+            }
+
+            if (renderState.HasSrcBlend)
+            {
+                material.SetInt("_SrcBlend", renderState.SrcBlend);
+            }
+
+            if (renderState.HasDstBlend)
+            {
+                material.SetInt("_DstBlend", renderState.DstBlend);
+            }
+
+            if (renderState.HasZWrite)
+            {
+                material.SetInt("_ZWrite", renderState.ZWrite);
+            }
+
+            SetKeyword(material, "_ALPHATEST_ON", renderState.AlphaTestEnabled);
+            SetKeyword(material, "_ALPHABLEND_ON", renderState.AlphaBlendEnabled);
+            SetKeyword(material, "_ALPHAPREMULTIPLY_ON", renderState.AlphaPremultiplyEnabled);
+            material.SetOverrideTag("RenderType", renderState.RenderType);
+            material.renderQueue = renderState.RenderQueue;
+        }
+    }
+
+    private static void SetKeyword(Material material, string keyword, bool enabled)
+    {
+        if (enabled)
+        {
+            material.EnableKeyword(keyword);
+        }
+        else
+        {
+            material.DisableKeyword(keyword);
         }
     }
 
@@ -224,7 +394,7 @@ public class CameraWallFade : MonoBehaviour
         // Standard shader setup
         if (material.HasProperty("_Mode"))
         {
-            material.SetFloat("_Mode", 3f);
+            material.SetFloat("_Mode", 2f);
             material.SetOverrideTag("RenderType", "Transparent");
             material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
             material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
