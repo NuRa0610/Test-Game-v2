@@ -13,6 +13,8 @@ public class Enemy : MonoBehaviour
     public float ChaseExitBuffer = 0.5f;
     [SerializeField]
     public Player Player;
+    [SerializeField]
+    private float _forwardOffset = 180f;
 
     private BaseState _currentState;
     public PatrolState PatrolState = new PatrolState();
@@ -37,6 +39,11 @@ public class Enemy : MonoBehaviour
         Animator = GetComponent<Animator>();
         _currentState.EnterState(this);
         NavMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+
+        if (NavMeshAgent != null)
+        {
+            NavMeshAgent.updateRotation = false;
+        }
     }
 
     private void Start()
@@ -54,6 +61,27 @@ public class Enemy : MonoBehaviour
         {
             _currentState.UpdateState(this);
         }
+
+        FaceMovementDirection();
+    }
+
+    private void FaceMovementDirection()
+    {
+        if (NavMeshAgent == null)
+        {
+            return;
+        }
+
+        Vector3 direction = NavMeshAgent.desiredVelocity;
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up) *
+            Quaternion.Euler(0f, _forwardOffset, 0f);
     }
 
     private void StartRetreat()

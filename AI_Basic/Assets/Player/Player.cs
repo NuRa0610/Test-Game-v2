@@ -20,6 +20,8 @@ public class Player : MonoBehaviour
     [SerializeField]
     private Transform _camera;
     [SerializeField]
+    private Transform _visualRoot;
+    [SerializeField]
     private float _powerUpDuration;
     [SerializeField]
     private bool _useEnemyWaypointsForRespawn = true;
@@ -34,11 +36,14 @@ public class Player : MonoBehaviour
     private bool _lockCursorOnStart = true;
 
     private Rigidbody _rigidBody;
+    private Quaternion _visualRootBaseLocalRotation;
     private Coroutine _powerupCoroutine;
     private bool _isPoweredUp;
     private Vector2 _moveInput;
     public Action OnPowerUpStart;
     public Action OnPowerUpStop;
+
+    private const float VisualForwardOffset = 180f;
 
     private void Awake()
     {
@@ -46,6 +51,11 @@ public class Player : MonoBehaviour
         _rigidBody = GetComponent<Rigidbody>();
         _rigidBody.interpolation = RigidbodyInterpolation.Interpolate;
         _rigidBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+        if (_visualRoot != null)
+        {
+            _visualRootBaseLocalRotation = _visualRoot.localRotation;
+        }
     }
 
     private void OnValidate()
@@ -106,7 +116,30 @@ public class Player : MonoBehaviour
         }
 
         Vector3 resolvedDelta = ResolveMovementWithSliding(movementDelta);
+        FaceMovementDirection(resolvedDelta);
         _rigidBody.MovePosition(_rigidBody.position + resolvedDelta);
+    }
+
+    private void FaceMovementDirection(Vector3 direction)
+    {
+        if (_visualRoot == null)
+        {
+            return;
+        }
+
+        Vector3 localDirection = _visualRoot.parent != null
+            ? _visualRoot.parent.InverseTransformDirection(direction)
+            : direction;
+        localDirection.y = 0f;
+
+        if (localDirection.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        float yaw = Mathf.Atan2(localDirection.x, localDirection.z) * Mathf.Rad2Deg;
+        _visualRoot.localRotation = Quaternion.Euler(0f, yaw + VisualForwardOffset, 0f) *
+            _visualRootBaseLocalRotation;
     }
 
     private Vector3 ResolveMovementWithSliding(Vector3 desiredDelta)
