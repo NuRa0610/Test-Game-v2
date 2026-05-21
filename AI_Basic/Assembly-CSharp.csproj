@@ -67,6 +67,7 @@
     <Compile Include="Assets\Enemy\Enemy.cs" />
     <Compile Include="Assets\Player\CameraWallFade.cs" />
     <Compile Include="Assets\Player\CrossPlatformInput.cs" />
+    <Compile Include="Assets\Pickable\CollectibleGesture.cs" />
     <Compile Include="Assets\MainMenu\MainMenuManager.cs" />
     <Compile Include="Assets\Player\CinemachineInputBridge.cs" />
     <Compile Include="Assets\Pickable\ScoreManager.cs" />
