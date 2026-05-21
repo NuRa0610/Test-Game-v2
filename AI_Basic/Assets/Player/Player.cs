@@ -18,6 +18,8 @@ public class Player : MonoBehaviour
     [SerializeField]
     private int _maxSlideIterations = 2;
     [SerializeField]
+    private LayerMask _movementBlockerLayers = ~0;
+    [SerializeField]
     private Transform _camera;
     [SerializeField]
     private Transform _visualRoot;
@@ -33,7 +35,11 @@ public class Player : MonoBehaviour
     [SerializeField]
     private TMP_Text _healthText;
     [SerializeField]
+    // Turn this off in the Inspector if you want the mouse cursor to stay unlocked.
     private bool _lockCursorOnStart = true;
+    [SerializeField]
+    // WebGL needs a user click before the browser allows cursor lock.
+    private bool _relockCursorOnClick = true;
 
     private Rigidbody _rigidBody;
     private Quaternion _visualRootBaseLocalRotation;
@@ -80,16 +86,26 @@ public class Player : MonoBehaviour
         }
 #endif
 
+        if (_relockCursorOnClick && ShouldLockCursor() && Input.GetMouseButtonDown(0))
+        {
+            ApplyCursorState();
+        }
+
         _moveInput = CrossPlatformInput.GetMoveInput();
     }
 
     private void ApplyCursorState()
     {
-        bool useTouchControls = Input.touchSupported || Application.isMobilePlatform;
-        bool shouldLockCursor = _lockCursorOnStart && !useTouchControls;
+        bool shouldLockCursor = ShouldLockCursor();
 
         Cursor.lockState = shouldLockCursor ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = !shouldLockCursor;
+    }
+
+    private bool ShouldLockCursor()
+    {
+        bool useTouchControls = Input.touchSupported || Application.isMobilePlatform;
+        return _lockCursorOnStart && !useTouchControls;
     }
 
     private void FixedUpdate()
@@ -158,11 +174,7 @@ public class Player : MonoBehaviour
 
             Vector3 direction = remaining / distance;
 
-            if (_rigidBody.SweepTest(
-                    direction,
-                    out RaycastHit hit,
-                    distance + _collisionSkin,
-                    QueryTriggerInteraction.Ignore))
+            if (TryGetMovementBlockerHit(direction, distance + _collisionSkin, out RaycastHit hit))
             {
                 float safeDistance = Mathf.Max(0f, hit.distance - _collisionSkin);
                 Vector3 movePart = direction * safeDistance;
@@ -186,6 +198,43 @@ public class Player : MonoBehaviour
         }
 
         return resolved;
+    }
+
+    private bool TryGetMovementBlockerHit(Vector3 direction, float distance, out RaycastHit closestHit)
+    {
+        RaycastHit[] hits = _rigidBody.SweepTestAll(
+            direction,
+            distance,
+            QueryTriggerInteraction.Ignore);
+
+        closestHit = default;
+        bool hasHit = false;
+        float closestDistance = float.MaxValue;
+        int blockerMask = _movementBlockerLayers.value;
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider hitCollider = hits[i].collider;
+            if (hitCollider == null)
+            {
+                continue;
+            }
+
+            int hitLayerMask = 1 << hitCollider.gameObject.layer;
+            if ((blockerMask & hitLayerMask) == 0)
+            {
+                continue;
+            }
+
+            if (hits[i].distance < closestDistance)
+            {
+                closestDistance = hits[i].distance;
+                closestHit = hits[i];
+                hasHit = true;
+            }
+        }
+
+        return hasHit;
     }
 
     public void PickPowerUp()
