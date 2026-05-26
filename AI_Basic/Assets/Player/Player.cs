@@ -103,8 +103,12 @@ public class Player : MonoBehaviour
 
     private bool ShouldLockCursor()
     {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        return _lockCursorOnStart && !Application.isMobilePlatform;
+#else
         bool useTouchControls = Input.touchSupported || Application.isMobilePlatform;
         return _lockCursorOnStart && !useTouchControls;
+#endif
     }
 
     private void FixedUpdate()
