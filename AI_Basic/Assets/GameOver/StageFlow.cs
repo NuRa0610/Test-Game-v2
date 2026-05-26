@@ -17,7 +17,12 @@ public static class StageFlow
 
     public static bool IsFinalStage
     {
-        get { return GetCurrentStageIndex() >= StageSceneNames.Length - 1; }
+        get { return CurrentStageIndex >= StageSceneNames.Length - 1; }
+    }
+
+    public static int CurrentStageIndex
+    {
+        get { return GetCurrentStageIndex(); }
     }
 
     public static string WinPrimaryButtonText

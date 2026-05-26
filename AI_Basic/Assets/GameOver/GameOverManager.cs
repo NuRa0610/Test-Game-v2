@@ -1,11 +1,18 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using TMPro;
 
 public class GameOverManager : MonoBehaviour
 {
     [SerializeField]
     private TMP_Text _primaryButtonText;
+    [SerializeField]
+    private Image _backgroundImage;
+    [SerializeField]
+    private Sprite[] _winBackgrounds;
+    [SerializeField]
+    private Sprite[] _loseBackgrounds;
 
     // Start is called before the first frame update
     public void Start()
@@ -13,6 +20,7 @@ public class GameOverManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         UpdatePrimaryButtonText();
+        UpdateBackground();
     }
     
     public void Retry()
@@ -59,5 +67,62 @@ public class GameOverManager : MonoBehaviour
         }
 
         return retryButton.GetComponentInChildren<TMP_Text>();
+    }
+
+    private void UpdateBackground()
+    {
+        Image backgroundImage = _backgroundImage != null
+            ? _backgroundImage
+            : FindBackgroundImage();
+
+        if (backgroundImage == null)
+        {
+            return;
+        }
+
+        Sprite stageBackground = GetStageBackground();
+        if (stageBackground != null)
+        {
+            backgroundImage.sprite = stageBackground;
+        }
+    }
+
+    private Sprite GetStageBackground()
+    {
+        string activeSceneName = SceneManager.GetActiveScene().name;
+        Sprite[] backgrounds = null;
+
+        if (activeSceneName == "WinScreen")
+        {
+            backgrounds = _winBackgrounds;
+        }
+        else if (activeSceneName == "LoseScreen")
+        {
+            backgrounds = _loseBackgrounds;
+        }
+
+        if (backgrounds == null)
+        {
+            return null;
+        }
+
+        int stageIndex = StageFlow.CurrentStageIndex;
+        if (stageIndex < 0 || stageIndex >= backgrounds.Length)
+        {
+            return null;
+        }
+
+        return backgrounds[stageIndex];
+    }
+
+    private Image FindBackgroundImage()
+    {
+        GameObject background = GameObject.Find("Background");
+        if (background == null)
+        {
+            return null;
+        }
+
+        return background.GetComponent<Image>();
     }
 }

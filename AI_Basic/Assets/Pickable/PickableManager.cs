@@ -25,7 +25,11 @@ public class PickableManager : MonoBehaviour
         Pickable[] pickableObjects = FindObjectsOfType<Pickable>();
         for (int i = 0; i < pickableObjects.Length; i++)
         {
-            _pickablesList.Add(pickableObjects[i]);
+            if (pickableObjects[i].PickableType == PickableType.Coin)
+            {
+                _pickablesList.Add(pickableObjects[i]);
+            }
+
             pickableObjects[i].OnPicked += OnPickableCollected;
         }
         _scoreManager.SetMaxScore(_pickablesList.Count);
@@ -34,14 +38,20 @@ public class PickableManager : MonoBehaviour
 
     private void OnPickableCollected(Pickable pickable)
     {
-        _pickablesList.Remove(pickable);
-        Destroy(pickable.gameObject);
-        //Debug.Log("Pickable Collected: " + pickable.name);
-        
-        if (_pickablesList.Count <= 0)
+        if (pickable.PickableType == PickableType.Coin)
         {
-            //Debug.Log("All Pickables Collected");
-            StageFlow.LoadWinScreen();
+            _pickablesList.Remove(pickable);
+
+            if (_scoreManager != null)
+            {
+                _scoreManager.AddScore(1);
+            }
+
+            if (_pickablesList.Count <= 0)
+            {
+                //Debug.Log("All Pickables Collected");
+                StageFlow.LoadWinScreen();
+            }
         }
 
         if (pickable.PickableType == PickableType.PowerUp)
@@ -49,10 +59,8 @@ public class PickableManager : MonoBehaviour
             _player?.PickPowerUp();
         }
 
-        if (_scoreManager != null)
-        {
-            _scoreManager.AddScore(1);
-        }
+        Destroy(pickable.gameObject);
+        //Debug.Log("Pickable Collected: " + pickable.name);
 
     }
 }
