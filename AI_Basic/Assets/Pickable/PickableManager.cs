@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class PickableManager : MonoBehaviour
 {
@@ -42,7 +41,7 @@ public class PickableManager : MonoBehaviour
         if (_pickablesList.Count <= 0)
         {
             //Debug.Log("All Pickables Collected");
-            SceneManager.LoadScene("WinScreen");
+            StageFlow.LoadWinScreen();
         }
 
         if (pickable.PickableType == PickableType.PowerUp)
